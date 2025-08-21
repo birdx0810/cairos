@@ -1,58 +1,5 @@
-<template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-    <div class="max-w-7xl mx-auto p-6">
-      <!-- Header -->
-      <TimeControls
-        v-model:start-time="startTime"
-        v-model:end-time="endTime"
-        v-model:interval="interval"
-        @generate="generateIntervals"
-      />
-
-      <!-- Main Content Area -->
-      <div class="flex gap-6 mt-6 h-[700px]">
-        <!-- Schedule Section (60%) -->
-        <div class="flex-1 w-3/5">
-          <ScheduleTable
-            :schedule-data="scheduleData"
-            @update-item="updateScheduleItem"
-          />
-        </div>
-
-        <!-- Summary Section (30%) -->
-        <div class="w-2/5">
-          <SummaryTable
-            :schedule-data="scheduleData"
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<!-- Custom Scrollbar Styles -->
-<style>
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 10px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(to bottom, #60a5fa, #3b82f6);
-    border-radius: 10px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
-  }
-</style>
-
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref } from 'vue'
 import TimeControls from './TimeControls.vue'
 import ScheduleTable from './ScheduleTable.vue'
 import SummaryTable from './SummaryTable.vue'
@@ -106,74 +53,50 @@ const generateIntervals = () => {
     currentStart = currentEnd
   }
 
-  const existingData = scheduleData.value
-  scheduleData.value = newScheduleData.map(newItem => {
-    // Try to find matching time slot in existing data
-    const existingItem = existingData.find(item => 
-      item.startTime === newItem.startTime && 
-      item.endTime === newItem.endTime
-    )
-    // Keep existing plan/outcome if time slot matches
-    return existingItem || newItem
-  })
-  saveToLocalStorage()
+  scheduleData.value = newScheduleData
 }
 
 const updateScheduleItem = (index, field, value) => {
   scheduleData.value[index][field] = value
-  saveToLocalStorage()
 }
 
-const exportData = () => {
-  return scheduleData.value
-}
+// Initialize scheduleData with an empty array
+scheduleData.value = []
 
-// Local storage functions
-const saveToLocalStorage = () => {
-  const dataToSave = {
-    settings: {
-      startTime: startTime.value,
-      endTime: endTime.value,
-      interval: interval.value
-    },
-    scheduleItems: scheduleData.value
-  }
-  localStorage.setItem('cairos-schedule', JSON.stringify(dataToSave))
-}
-
-const loadFromLocalStorage = () => {
-  const savedData = localStorage.getItem('cairos-schedule')
-  if (savedData) {
-    try {
-      const parsedData = JSON.parse(savedData)
-      startTime.value = parsedData.settings.startTime
-      endTime.value = parsedData.settings.endTime
-      interval.value = parsedData.settings.interval
-      scheduleData.value = parsedData.scheduleItems
-      return true
-    } catch (e) {
-      console.error('Error loading saved data:', e)
-      return false
-    }
-  }
-  return false
-}
-
-// Watch for changes in time controls
-watch([startTime, endTime, interval], () => {
-  saveToLocalStorage()
-})
-
-// Initialize
-onMounted(() => {
-  if (!loadFromLocalStorage()) {
-    generateIntervals() // Only generate default if no saved data exists
-  }
-})
-
-// Expose methods to parent component if needed
-defineExpose({
-  exportData,
-  generateIntervals
-})
+// Initialize with default schedule
+setTimeout(() => {
+  generateIntervals()
+}, 0)
 </script>
+
+<template>
+  <div class="w-full">
+    <div class="max-w-7xl mx-auto p-4 md:p-6">
+      <!-- Header -->
+      <TimeControls
+        v-model:start-time="startTime"
+        v-model:end-time="endTime"
+        v-model:interval="interval"
+        @generate="generateIntervals"
+      />
+
+      <!-- Main Content Area -->
+      <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 mt-4 lg:mt-6">
+        <!-- Schedule Section (Full width on mobile, 60% on desktop) -->
+        <div class="w-full lg:w-3/5 min-w-0">
+          <ScheduleTable
+            :schedule-data="scheduleData"
+            @update-item="updateScheduleItem"
+          />
+        </div>
+
+        <!-- Summary Section (Full width on mobile, 40% on desktop) -->
+        <div class="w-full lg:w-2/5 min-w-0">
+          <SummaryTable
+            :schedule-data="scheduleData"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
